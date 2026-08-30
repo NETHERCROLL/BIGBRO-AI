@@ -3,7 +3,7 @@ import google.generativeai as genai
 from PIL import Image
 
 # 1. CONFIGURATION DE L'IA (Mettez votre clé Google AI Studio ici)
-GEMINI_API_KEY = "VOTRE_CLE_API_GEMINI_ICI"
+GEMINI_API_KEY = "AQ.Ab8RN6IIX3D_b1RQiMuKZeE0L2vZDwE2BzgDY_Ig_lrd20FWDw"
 
 # Configuration de la page Streamlit pour mobile
 st.set_page_config(page_title="Kolo-Exam", page_icon="🎓", layout="centered")
