@@ -1,18 +1,9 @@
-import subprocess
-import sys
-
-# Script magique pour forcer l'installation si Streamlit fait des siennes
-try:
-    import google.generativeai as genai
-except ModuleNotFoundError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai", "pillow"])
-    import google.generativeai as genai
-
 import streamlit as st
+import google.generativeai as genai
 from PIL import Image
 
 # 1. CONFIGURATION DE L'IA (Mettez votre clé Google AI Studio ici)
-GEMINI_API_KEY = "VOTRE_CLE_API_GEMINI_ICI"
+GEMINI_API_KEY = "AQ.Ab8RN6IIX3D_b1RQiMuKZeE0L2vZDwE2BzgDY_Ig_lrd20FWDw"
 
 # Configuration de la page Streamlit pour mobile
 st.set_page_config(page_title="Kolo-Exam", page_icon="🎓", layout="centered")
@@ -20,30 +11,10 @@ st.set_page_config(page_title="Kolo-Exam", page_icon="🎓", layout="centered")
 # Injection CSS propre pour le design Cameroun (Bleu, Blanc, Or)
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #f8f9fa;
-    }
-    .main-title {
-        color: #0b3c5d;
-        text-align: center;
-        font-family: 'Helvetica Neue', sans-serif;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    .sub-title {
-        color: #d9b310;
-        text-align: center;
-        font-size: 14px;
-        margin-bottom: 20px;
-    }
-    .status-badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 20px;
-    }
+    .stApp { background-color: #f8f9fa; }
+    .main-title { color: #0b3c5d; text-align: center; font-family: 'Helvetica Neue', sans-serif; font-weight: bold; margin-bottom: 5px; }
+    .sub-title { color: #d9b310; text-align: center; font-size: 14px; margin-bottom: 20px; }
+    .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 20px; }
     .online { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .offline { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
     </style>
@@ -66,7 +37,7 @@ else:
 # 3. INITIALISATION DE L'IA
 if is_online:
     if GEMINI_API_KEY == "AQ.Ab8RN6IIX3D_b1RQiMuKZeE0L2vZDwE2BzgDY_Ig_lrd20FWDw" or not GEMINI_API_KEY:
-        st.warning("⚠️ N'oublie pas de remplacer 'VOTRE_CLE_API_GEMINI_ICI' par ta vraie clé dans le code app.py.")
+        st.warning("⚠️ N'oublie pas de remplacer 'VOTRE_CLE_API_GEMINI_ICI' par ta vraie clé.")
     else:
         genai.configure(api_key=GEMINI_API_KEY)
 
@@ -94,27 +65,22 @@ if prompt := st.chat_input("Pose ta question ici..."):
         st.write(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    with St.chat_message("assistant"):
+    with st.chat_message("assistant"):
         response_placeholder = st.empty()
         
         if not is_online:
-            reponse_locale = "💡 *[Mode Kolo-Local]* : Salut mon petit ! Je vois que le réseau dérange. En mode hors-ligne complet, je ne peux pas encore analyser de nouvelles images sans encombrer la mémoire de ton téléphone. Relis bien les formules de ton cahier en attendant que le réseau revienne, ou active le mode 'En ligne' pour que je t'aide !"
+            reponse_locale = "💡 *[Mode Kolo-Local]* : Salut mon petit ! Je vois que le réseau dérange. En mode hors-ligne complet, je ne peux pas encore analyser de nouvelles images sans internet. Relis bien les formules de ton cahier !"
             response_placeholder.write(reponse_locale)
             st.session_state.messages.append({"role": "assistant", "content": reponse_locale})
         else:
             try:
                 system_instruction = (
-                    "Tu es Kolo-Exam, un grand frère et tuteur IA expert du programme scolaire camerounais (MINESEC : BEPC, Probatoire, Baccalauréat). "
-                    "Ton but est d'aider l'élève à résoudre ses exercices de mathématiques, physique ou chimie. "
-                    "RÈGLE ABSOLUE : Ne donne jamais la solution directement. Guide l'élève pas à pas. Pose-lui des questions sur son cours pour le pousser à trouver la formule. "
-                    "Utilise des expressions camerounaises bienveillantes mais sérieuses (ex: 'Mon petit', 'Tu t'en sors ?', 'Regarde bien l'énoncé, ne te presse pas', 'On est ensemble')."
+                    "Tu es Kolo-Exam, un grand frère et tuteur IA expert du programme scolaire camerounais (MINESEC). "
+                    "RÈGLE ABSOLUE : Ne donne jamais la solution directement. Guide l'élève pas à pas. Pose-lui des questions. "
+                    "Utilise des expressions camerounaises (ex: 'Mon petit', 'Tu t'en sors ?', 'On est ensemble')."
                 )
                 
-                model = genai.GenerativeModel(
-                    model_name="gemini-1.5-flash",
-                    system_instruction=system_instruction
-                )
-                
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_instruction)
                 content_payload = [prompt]
                 if image_to_send:
                     content_payload.append(image_to_send)
