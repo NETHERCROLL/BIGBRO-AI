@@ -301,7 +301,7 @@
                 return;
             }
 
-            if (GEMINI_API_KEY === "VOTRE_CLE_API_GEMINI_ICI" || GEMINI_API_KEY === "") {
+            if (GEMINI_API_KEY === "AQ.Ab8RN6IIX3D_b1RQiMuKZeE0L2vZDwE2BzgDY_Ig_lrd20FWDw" || GEMINI_API_KEY === "") {
                 aiDiv.innerHTML = "⚠️ <strong>Erreur :</strong> Tu as oublié d'entrer ta clé API Gemini à la ligne 146 du code ! Récupère une clé gratuite sur Google AI Studio et colle-la dans le fichier.";
                 return;
             }
