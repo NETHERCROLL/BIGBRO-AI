@@ -52,7 +52,7 @@ for msg in st.session_state.messages:
 
 # 4. ZONE DE SCAN PHOTO
 st.write("---")
-uploaded_file = st.file_input("📷 Scanne ou prends en photo ton exercice :", type=["png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("📷 Scanne ou prends en photo ton exercice :", type=["png", "jpg", "jpeg"])
 
 image_to_send = None
 if uploaded_file is not None:
