@@ -59,18 +59,16 @@ if uploaded_file is not None:
     image_to_send = Image.open(uploaded_file)
     st.image(image_to_send, caption="Exercice chargé avec succès !", use_container_width=True)
 
-# 5. ENVOI DU MESSAGE ET LOGIQUE DE L'IA
+# 5. ENVOI DU MESSAGE ET LOGIQUE DE L'IA (MODE STREAMING)
 if prompt := st.chat_input("Pose ta question ici..."):
     with st.chat_message("user"):
         st.write(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     with st.chat_message("assistant"):
-        response_placeholder = st.empty()
-        
         if not is_online:
             reponse_locale = "💡 *[Mode Kolo-Local]* : Salut mon petit ! Je vois que le réseau dérange. En mode hors-ligne complet, je ne peux pas encore analyser de nouvelles images sans internet. Relis bien les formules de ton cahier !"
-            response_placeholder.write(reponse_locale)
+            st.write(reponse_locale)
             st.session_state.messages.append({"role": "assistant", "content": reponse_locale})
         else:
             try:
@@ -85,11 +83,14 @@ if prompt := st.chat_input("Pose ta question ici..."):
                 if image_to_send:
                     content_payload.append(image_to_send)
                 
-                with st.spinner("Le Grand Frère réfléchit..."):
-                    response = model.generate_content(content_payload)
-                    
-                response_placeholder.write(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                # Fonction magique : st.write_stream affiche le texte en temps réel
+                def generate_stream():
+                    response_stream = model.generate_content(content_payload, stream=True)
+                    for chunk in response_stream:
+                        yield chunk.text
+
+                full_response = st.write_stream(generate_stream())
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
                 
             except Exception as e:
-                response_placeholder.write(f"❌ Erreur lors de la connexion à l'IA : {e}")
+                st.write(f"❌ Erreur lors de la connexion à l'IA : {e}")
