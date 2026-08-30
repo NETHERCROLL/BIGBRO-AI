@@ -1,357 +1,128 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ton Grand Frère IA</title>
+import streamlit as st
+import google.generativeai as genai
+from PIL import Image
+
+# 1. CONFIGURATION DE L'IA (Mettez votre clé Google AI Studio ici)
+GEMINI_API_KEY = "VOTRE_CLE_API_GEMINI_ICI"
+
+# Configuration de la page Streamlit pour mobile
+st.set_page_config(page_title="Kolo-Exam", page_icon="🎓", layout="centered")
+
+# Injection CSS propre pour le design Cameroun (Bleu, Blanc, Or)
+st.markdown("""
     <style>
-        :root {
-            --primary: #1e3a8a; /* Bleu Roi */
-            --secondary: #f59e0b; /* Jaune Or */
-            --bg: #f3f4f6;
-            --chat-bg: #ffffff;
-            --text: #1f2937;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        header {
-            background-color: var(--primary);
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: relative;
-        }
-
-        header .status {
-            font-size: 0.75rem;
-            display: block;
-            font-weight: normal;
-            margin-top: 2px;
-        }
-
-        .status-online { color: #10b981; }
-        .status-offline { color: var(--secondary); }
-
-        #chat-container {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .message {
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 16px;
-            line-height: 1.4;
-            font-size: 0.95rem;
-            word-wrap: break-word;
-        }
-
-        .user {
-            background-color: var(--primary);
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
-
-        .ai {
-            background-color: var(--chat-bg);
-            color: var(--text);
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .message img {
-            max-width: 100%;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        #preview-container {
-            display: none;
-            padding: 8px 15px;
-            background: #e5e7eb;
-            align-items: center;
-            gap: 10px;
-        }
-
-        #image-preview {
-            height: 50px;
-            border-radius: 4px;
-            object-fit: cover;
-        }
-
-        #cancel-image {
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        #input-container {
-            background-color: var(--chat-bg);
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .btn-icon {
-            background: #f3f4f6;
-            border: none;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: background 0.2s;
-        }
-
-        .btn-icon:hover { background: #e5e7eb; }
-
-        #text-input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 24px;
-            outline: none;
-            font-size: 0.95rem;
-        }
-
-        #send-btn {
-            background-color: var(--secondary);
-            color: white;
-        }
-
-        #send-btn:hover { background-color: #d97706; }
-
-        /* Mode d'emploi Offline */
-        .offline-notice {
-            background-color: #fef3c7;
-            border: 1px solid #f59e0b;
-            color: #b45309;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-            text-align: center;
-        }
+    .stApp {
+        background-color: #f8f9fa;
+    }
+    .main-title {
+        color: #0b3c5d;
+        text-align: center;
+        font-family: 'Helvetica Neue', sans-serif;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .sub-title {
+        color: #d9b310;
+        text-align: center;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .online { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .offline { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
     </style>
-</head>
-<body>
+""", unsafe_allow_html=True)
 
-    <header>
-        🎓 Kolo-Exam
-        <span id="network-status" class="status status-online">● Connecté au Grand Frère</span>
-    </header>
+# En-tête de l'application
+st.markdown("<h1 class='main-title'>🎓 Kolo-Exam</h1>", unsafe_allow_html=True)
+st.markdown("<p class='sub-title'>Ton Grand Frère IA pour le BEPC, Probatoire et Bac</p>", unsafe_allow_html=True)
 
-    <div id="chat-container">
-        <div class="message ai">
-            Mbala ! C'est ton grand frère Kolo-Exam. Tu es bloqué sur quel exercice de mathématiques, physique ou chimie ? Envoie-moi l'énoncé ou prends simplement une photo propre. On va gérer ça ensemble pas à pas, mon petit !
-        </div>
-    </div>
+# 2. GESTION DU MODE EN LIGNE / HORS-LIGNE
+# Option pour simuler la connexion sur Streamlit
+mode = st.radio("Connexion réseau :", ["En ligne (Connecté au Grand Frère)", "Hors-ligne (Mode Local Kolo)"], horizontal=True)
 
-    <div id="preview-container">
-        <img id="image-preview" src="" alt="Aperçu">
-        <button id="cancel-image">×</button>
-        <span style="font-size: 0.85rem; color: #4b5563;">Photo ajoutée au message</span>
-    </div>
+if mode == "En ligne (Connecté au Grand Frère)":
+    st.markdown("<div class='status-badge online'>🟢 Connecté au Grand Frère - Prêt à t'aider</div>", unsafe_allow_html=True)
+    is_online = True
+else:
+    st.markdown("<div class='status-badge offline'>🟠 Mode Kolo-Local activé (Simulation)</div>", unsafe_allow_html=True)
+    is_online = False
 
-    <div id="input-container">
-        <label class="btn-icon" for="file-input">
-            📷
-            <input type="file" id="file-input" accept="image/*" style="display: none;">
-        </label>
-        <input type="text" id="text-input" placeholder="Pose ta question ici...">
-        <button id="send-btn" class="btn-icon">➔</button>
-    </div>
+# 3. INITIALISATION DE L'IA
+if is_online:
+    if GEMINI_API_KEY == "VOTRE_CLE_API_GEMINI_ICI" or not GEMINI_API_KEY:
+        st.warning("⚠️ N'oublie pas de remplacer 'VOTRE_CLE_API_GEMINI_ICI' par ta vraie clé dans le code app.py.")
+    else:
+        genai.configure(api_key=GEMINI_API_KEY)
 
-    <script>
-        // CONFIGURATION : Mets ta clé API Gemini entre les guillemets ci-dessous !
-        const GEMINI_API_KEY = "VOTRE_CLE_API_GEMINI_ICI";
+# Conserver l'historique de la discussion
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-        const chatContainer = document.getElementById('chat-container');
-        const textInput = document.getElementById('text-input');
-        const sendBtn = document.getElementById('send-btn');
-        const fileInput = document.getElementById('file-input');
-        const previewContainer = document.getElementById('preview-container');
-        const imagePreview = document.getElementById('image-preview');
-        const cancelImage = document.getElementById('cancel-image');
-        const networkStatus = document.getElementById('network-status');
+# Afficher les anciens messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
 
-        let selectedImageBase64 = null;
-        let selectedImageType = null;
-        let isOnline = navigator.onLine;
+# 4. ZONE DE SCAN PHOTO (MULTIMODALITÉ)
+st.write("---")
+uploaded_file = st.file_input("📷 Scanne ou prends en photo ton exercice :", type=["png", "jpg", "jpeg"])
 
-        // Gestion de la détection du réseau (Internet / Hors-ligne)
-        function updateNetworkStatus() {
-            isOnline = navigator.onLine;
-            if (isOnline) {
-                networkStatus.textContent = "● Connecté au Grand Frère (En ligne)";
-                networkStatus.className = "status status-online";
-            } else {
-                networkStatus.textContent = "● Mode Local (Hors-ligne activé)";
-                networkStatus.className = "status status-offline";
+image_to_send = None
+if uploaded_file is not None:
+    image_to_send = Image.open(uploaded_file)
+    st.image(image_to_send, caption="Exercice chargé avec succès !", use_container_width=True)
+
+# 5. ENVOI DU MESSAGE ET LOGIQUE DE L'IA
+if prompt := st.chat_input("Pose ta question ici (ex: Je bloque sur l'exercice de physique...)"):
+    # Afficher le message de l'élève
+    with st.chat_message("user"):
+        st.write(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Générer la réponse
+    with st.chat_message("assistant"):
+        response_placeholder = st.empty()
+        
+        if not is_online:
+            # Réponse simulée si le téléphone n'a pas internet
+            reponse_locale = "💡 *[Mode Kolo-Local]* : Salut mon petit ! Je vois que le réseau dérange. En mode hors-ligne complet, je ne peux pas encore analyser de nouvelles images sans encombrer la mémoire de ton téléphone. Relis bien les formules de ton cahier en attendant que le réseau revienne, ou active le mode 'En ligne' pour que je t'aide !"
+            response_placeholder.write(reponse_locale)
+            st.session_state.messages.append({"role": "assistant", "content": reponse_locale})
+        else:
+            try:
+                # Configuration du comportement de l'IA (System Prompt)
+                system_instruction = (
+                    "Tu es Kolo-Exam, un grand frère et tuteur IA expert du programme scolaire camerounais (MINESEC : BEPC, Probatoire, Baccalauréat). "
+                    "Ton but est d'aider l'élève à résoudre ses exercices de mathématiques, physique ou chimie. "
+                    "RÈGLE ABSOLUE : Ne donne jamais la solution directement. Guide l'élève pas à pas. Pose-lui des questions sur son cours pour le pousser à trouver la formule. "
+                    "Utilise des expressions camerounaises bienveillantes mais sérieuses (ex: 'Mon petit', 'Tu t'en sors ?', 'Regarde bien l'énoncé, ne te presse pas', 'On est ensemble')."
+                )
                 
-                // Notification éducative sur l'écran
-                const notice = document.createElement('div');
-                notice.className = 'offline-notice';
-                notice.textContent = "⚠️ Tu es hors-ligne. Le mode local nécessite une intégration d'IA embarquée (via Android). Les requêtes directes à l'API en ligne échoueront tant que le réseau ne revient pas.";
-                chatContainer.appendChild(notice);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-        }
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-        updateNetworkStatus(); // Exécution initiale
-
-        // Gestion de l'image
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                selectedImageType = file.type;
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    selectedImageBase64 = evt.target.result.split(',')[1];
-                    imagePreview.src = evt.target.result;
-                    previewContainer.style.display = 'flex';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        cancelImage.addEventListener('click', function() {
-            selectedImageBase64 = null;
-            selectedImageType = null;
-            fileInput.value = '';
-            previewContainer.style.display = 'none';
-        });
-
-        // Envoi de message
-        async function sendMessage() {
-            const text = textInput.value.trim();
-            if (!text && !selectedImageBase64) return;
-
-            // 1. Rendu du message utilisateur sur l'écran
-            const userDiv = document.createElement('div');
-            userDiv.className = 'message user';
-            
-            if (selectedImageBase64) {
-                const img = document.createElement('img');
-                img.src = `data:${selectedImageType};base64,${selectedImageBase64}`;
-                userDiv.appendChild(img);
-            }
-            if (text) {
-                const p = document.createElement('p');
-                p.textContent = text;
-                userDiv.appendChild(p);
-            }
-            chatContainer.appendChild(userDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-
-            // Sauvegarde des données actuelles pour l'envoi et reset des champs d'entrée
-            const msgText = text;
-            const imgBase64 = selectedImageBase64;
-            const imgType = selectedImageType;
-
-            textInput.value = '';
-            cancelImage.click();
-
-            // 2. Rendu de l'état de chargement IA
-            const aiDiv = document.createElement('div');
-            aiDiv.className = 'message ai';
-            aiDiv.textContent = "Attends un peu, ton grand frère réfléchit...";
-            chatContainer.appendChild(aiDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-
-            // 3. Gestion de l'alternative hors-ligne
-            if (!isOnline) {
-                aiDiv.innerHTML = "<strong>[Mode Kolo-Local]</strong> : Majo, je suis déconnecté du réseau ! Pour que je te réponde sans internet au village, ce prototype web doit être converti en application Android native avec l'IA directement téléchargée dans ton téléphone. Reconnecte-toi pour interroger mon serveur en ligne.";
-                return;
-            }
-
-            if (GEMINI_API_KEY === "AQ.Ab8RN6IIX3D_b1RQiMuKZeE0L2vZDwE2BzgDY_Ig_lrd20FWDw" || GEMINI_API_KEY === "") {
-                aiDiv.innerHTML = "⚠️ <strong>Erreur :</strong> Tu as oublié d'entrer ta clé API Gemini à la ligne 146 du code ! Récupère une clé gratuite sur Google AI Studio et colle-la dans le fichier.";
-                return;
-            }
-
-            // 4. Appel à l'API Google Gemini (Vision & Texte)
-            try {
-                // Définition du prompt système adapté à la culture camerounaise
-                const systemInstruction = "Tu es Kolo-Exam, un grand frère et tuteur IA expert du programme scolaire camerounais (MINESEC : BEPC, Probatoire, Baccalauréat). Ton but est d'aider l'élève à résoudre ses exercices de mathématiques, physique ou chimie. RÈGLE ABSOLUE : Ne donne jamais la solution directement. Guide l'élève pas à pas. Pose-lui des questions sur son cours pour le pousser à trouver la formule. Utilise des expressions camerounaises bienveillantes (ex: 'Mon petit', 'Tu t'en sors ?', 'Regarde bien l'énoncé, ne te presse pas'). Reste concis dans tes réponses pour préserver la lisibilité sur mobile.";
-
-                let contentsPayload = [];
-                let parts = [];
-
-                if (imgBase64) {
-                    parts.push({
-                        inlineData: {
-                            mimeType: imgType,
-                            data: imgBase64
-                        }
-                    });
-                }
+                # Choix du modèle Gemini léger et rapide
+                model = genai.GenerativeModel(
+                    model_name="gemini-1.5-flash",
+                    system_instruction=system_instruction
+                )
                 
-                parts.push({ text: msgText || "Analyse cette image et guide-moi selon tes consignes de tuteur." });
-                contentsPayload.push({ parts: parts });
-
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: contentsPayload,
-                        systemInstruction: { parts: [{ text: systemInstruction }] }
-                    })
-                });
-
-                const data = await response.json();
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    aiDiv.textContent = data.candidates[0].content.parts[0].text;
-                } else {
-                    aiDiv.textContent = "Akié, j'ai eu un petit problème pour lire ce message. Réessaie encore ?";
-                }
-            } catch (error) {
-                console.error(error);
-                aiDiv.textContent = "Erreur de connexion avec l'API. Vérifie ta clé ou ton réseau, mon petit.";
-            }
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        sendBtn.addEventListener('click', sendMessage);
-        textInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-    </script>
-</body>
-</html>
+                # Préparation du contenu (Texte seul OU Texte + Image)
+                content_payload = [prompt]
+                if image_to_send:
+                    content_payload.append(image_to_send)
+                
+                # Appel à l'IA
+                with st.spinner("Le Grand Frère réfléchit..."):
+                    response = model.generate_content(content_payload)
+                    
+                response_placeholder.write(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                
+            except Exception as e:
+                response_placeholder.write(f"❌ Erreur lors de la connexion à l'IA : {e}")
