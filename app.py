@@ -1,9 +1,18 @@
+import subprocess
+import sys
+
+# Script magique pour forcer l'installation si Streamlit fait des siennes
+try:
+    import google.generativeai as genai
+except ModuleNotFoundError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai", "pillow"])
+    import google.generativeai as genai
+
 import streamlit as st
-import google.generativeai as genai
 from PIL import Image
 
 # 1. CONFIGURATION DE L'IA (Mettez votre clé Google AI Studio ici)
-GEMINI_API_KEY = "AQ.Ab8RN6IIX3D_b1RQiMuKZeE0L2vZDwE2BzgDY_Ig_lrd20FWDw"
+GEMINI_API_KEY = "VOTRE_CLE_API_GEMINI_ICI"
 
 # Configuration de la page Streamlit pour mobile
 st.set_page_config(page_title="Kolo-Exam", page_icon="🎓", layout="centered")
@@ -45,7 +54,6 @@ st.markdown("<h1 class='main-title'>🎓 Kolo-Exam</h1>", unsafe_allow_html=True
 st.markdown("<p class='sub-title'>Ton Grand Frère IA pour le BEPC, Probatoire et Bac</p>", unsafe_allow_html=True)
 
 # 2. GESTION DU MODE EN LIGNE / HORS-LIGNE
-# Option pour simuler la connexion sur Streamlit
 mode = st.radio("Connexion réseau :", ["En ligne (Connecté au Grand Frère)", "Hors-ligne (Mode Local Kolo)"], horizontal=True)
 
 if mode == "En ligne (Connecté au Grand Frère)":
@@ -57,7 +65,7 @@ else:
 
 # 3. INITIALISATION DE L'IA
 if is_online:
-    if GEMINI_API_KEY == "VOTRE_CLE_API_GEMINI_ICI" or not GEMINI_API_KEY:
+    if GEMINI_API_KEY == "AQ.Ab8RN6IIX3D_b1RQiMuKZeE0L2vZDwE2BzgDY_Ig_lrd20FWDw" or not GEMINI_API_KEY:
         st.warning("⚠️ N'oublie pas de remplacer 'VOTRE_CLE_API_GEMINI_ICI' par ta vraie clé dans le code app.py.")
     else:
         genai.configure(api_key=GEMINI_API_KEY)
@@ -71,7 +79,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# 4. ZONE DE SCAN PHOTO (MULTIMODALITÉ)
+# 4. ZONE DE SCAN PHOTO
 st.write("---")
 uploaded_file = st.file_input("📷 Scanne ou prends en photo ton exercice :", type=["png", "jpg", "jpeg"])
 
@@ -81,24 +89,20 @@ if uploaded_file is not None:
     st.image(image_to_send, caption="Exercice chargé avec succès !", use_container_width=True)
 
 # 5. ENVOI DU MESSAGE ET LOGIQUE DE L'IA
-if prompt := st.chat_input("Pose ta question ici (ex: Je bloque sur l'exercice de physique...)"):
-    # Afficher le message de l'élève
+if prompt := st.chat_input("Pose ta question ici..."):
     with st.chat_message("user"):
         st.write(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Générer la réponse
-    with st.chat_message("assistant"):
+    with St.chat_message("assistant"):
         response_placeholder = st.empty()
         
         if not is_online:
-            # Réponse simulée si le téléphone n'a pas internet
             reponse_locale = "💡 *[Mode Kolo-Local]* : Salut mon petit ! Je vois que le réseau dérange. En mode hors-ligne complet, je ne peux pas encore analyser de nouvelles images sans encombrer la mémoire de ton téléphone. Relis bien les formules de ton cahier en attendant que le réseau revienne, ou active le mode 'En ligne' pour que je t'aide !"
             response_placeholder.write(reponse_locale)
             st.session_state.messages.append({"role": "assistant", "content": reponse_locale})
         else:
             try:
-                # Configuration du comportement de l'IA (System Prompt)
                 system_instruction = (
                     "Tu es Kolo-Exam, un grand frère et tuteur IA expert du programme scolaire camerounais (MINESEC : BEPC, Probatoire, Baccalauréat). "
                     "Ton but est d'aider l'élève à résoudre ses exercices de mathématiques, physique ou chimie. "
@@ -106,18 +110,15 @@ if prompt := st.chat_input("Pose ta question ici (ex: Je bloque sur l'exercice d
                     "Utilise des expressions camerounaises bienveillantes mais sérieuses (ex: 'Mon petit', 'Tu t'en sors ?', 'Regarde bien l'énoncé, ne te presse pas', 'On est ensemble')."
                 )
                 
-                # Choix du modèle Gemini léger et rapide
                 model = genai.GenerativeModel(
                     model_name="gemini-1.5-flash",
                     system_instruction=system_instruction
                 )
                 
-                # Préparation du contenu (Texte seul OU Texte + Image)
                 content_payload = [prompt]
                 if image_to_send:
                     content_payload.append(image_to_send)
                 
-                # Appel à l'IA
                 with st.spinner("Le Grand Frère réfléchit..."):
                     response = model.generate_content(content_payload)
                     
